@@ -1,38 +1,53 @@
 import pandas as pd
+import joblib
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 
-  
-# Load dataset
+# 1. Load dataset
 data = pd.read_csv("data/students.csv")
 
-# Map categorical features to numeric values
+# 2. Convert categorical column to numbers
 data["financial_status"] = data["financial_status"].map({
     "Low": 0,
     "Medium": 1,
     "High": 2
 })
 
-# Select features and target variable
-X = data[["attendance", "gpa", "engagement", "financial_status"]]
+# 3. Select all 5 features and target
+X = data[[
+    "attendance",
+    "gpa",
+    "engagement",
+    "financial_status",
+    "previous_performance"
+]]
 y = data["dropout"]
 
-# Train/test split
+# 4. Split data (80% Train, 20% Test)
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
 )
 
-# 1. Decision Tree Model
-dt_model = DecisionTreeClassifier(random_state=42)
-dt_model.fit(X_train, y_train)
-dt_acc = accuracy_score(y_test, dt_model.predict(X_test))
-
-# 2. Random Forest Model
-rf_model = RandomForestClassifier(random_state=42)
+# 5. Initialize and train Random Forest model ONLY
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
 rf_model.fit(X_train, y_train)
-rf_acc = accuracy_score(y_test, rf_model.predict(X_test))
 
-print(f"Decision Tree Accuracy: {dt_acc * 100:.1f}%")
-print(f"Random Forest Accuracy: {rf_acc * 100:.1f}%")
+# 6. Evaluate model
+predictions = rf_model.predict(X_test)
+accuracy = accuracy_score(y_test, predictions)
+
+# 7. Save model binary for Flask backend
+joblib.dump(rf_model, "model.joblib")
+
+print("--- Model Training Complete ---")
+print("Random Forest model trained successfully.")
+print(f"Test Accuracy: {accuracy * 100:.1f}%")
+print("Saved trained model to 'model.joblib'")
